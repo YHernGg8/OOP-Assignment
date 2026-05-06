@@ -1,0 +1,103 @@
+%%writefile Hotel.h
+#ifndef Hotel_H
+#define Hotel_H
+
+#include<iostream>
+#include<string>
+#include<iomanip>
+#include "Review.h"
+#include "Constants.h"
+using namespace std;
+
+class Hotel
+{
+  private:
+    int hotelID;
+    string hotelName;
+    string location;
+    Review hotelReview[MAX_REVIEWS];
+    int reviewCount;
+    double totalRating;
+
+  public:
+    Hotel() : hotelID(0), hotelName(""), location(""), reviewCount(0), totalRating(0.0){}
+
+    Hotel(int hid, string hName, string hloca, int rc, double t) :
+    hotelID(hid), hotelName(hName), location(hloca), reviewCount(rc), totalRating(t){}
+
+    // Constructor for creating new hotels when loading reviews
+    Hotel(int hid, string hName, string hloca) :
+    hotelID(hid), hotelName(hName), location(hloca), reviewCount(0), totalRating(0.0){}
+
+    // Getter functions
+    int getHotelID() const {return hotelID;} // Fixed syntax
+    string getHotelName() const {return hotelName;}
+    string getLocation() const {return location;}
+    int getReviewCount() const {return reviewCount;}
+    double getAverageRating() const
+    {
+      if (reviewCount == 0) return 0.0;
+      else return totalRating / reviewCount;
+    }
+
+    // Add review to hotel's collection
+    bool addReview(const Review& review) {
+        if (reviewCount >= MAX_REVIEWS) return false;
+
+        hotelReview[reviewCount++] = review;
+        totalRating += review.getRating();
+        return true;
+    }
+
+    // Get review via index
+    Review getReview(int index) const
+    {
+      if (index >= 0 && index < reviewCount) return hotelReview[index];
+      else return Review();
+    }
+
+    Review* getAllReviews()
+    {
+      return hotelReview;
+    }
+
+    // Display hotel information and all reviews
+    void printHotelProfile() const {
+        cout << "\n========== HOTEL: " << hotelName << " ==========" << endl;
+        cout << "ID: " << hotelID << " | Location: " << location << endl;
+        cout << "Total Reviews: " << reviewCount << endl;
+        cout << "Average Rating: " << fixed << setprecision(2) << getAverageRating() << "/5.0" << endl;
+        cout << "======================================\n" << endl;
+
+        if (reviewCount == 0) {
+            cout << "No reviews available for this hotel." << endl;
+            return;
+        }
+
+        cout << "REVIEWS:" << endl;
+        for (int i = 0; i < reviewCount; i++) {
+            cout << "[" << (i+1) << "] ";
+            hotelReview[i].print(); // Fixed typo: hotelReviews to hotelReview
+        }
+    }
+
+    // Operator overloading - comparing hotels by ratings
+    bool operator>(const Hotel& right) const
+    {
+      return this->getAverageRating() > right.getAverageRating();
+    }
+
+    bool operator<(const Hotel& right) const
+    {
+      return this->getAverageRating() < right.getAverageRating();
+    }
+    
+    // Overload the << operator to print Hotel objects (for topPickMatcher)
+    friend ostream& operator<<(ostream& os, const Hotel& hotel) {
+        os << hotel.getHotelName() << " (Avg Rating: " 
+           << fixed << setprecision(2) << hotel.getAverageRating() << ")";
+        return os;
+    }
+};
+
+#endif
