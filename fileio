@@ -1,0 +1,100 @@
+%%writefile FileIO.h
+#ifndef FileIO_H
+#define FileIO_H
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <iomanip>
+#include "Traveler.h"
+#include "Hotel.h"
+using namespace std;
+
+inline void loadTravelers(Traveler travelers[], int& travelerCount) {
+    ifstream file("users.txt");
+    if (!file) {
+        cout << "Warning: users.txt not found." << endl;
+        travelerCount = 0;
+        return;
+    }
+
+    travelerCount = 0;
+    char u;
+    int id, points;
+    string name, location, email, level;
+    char ch;
+
+    while (travelerCount < MAX_TRAVELERS && file >> u >> id) {
+      file.get(ch);
+
+      getline(file, name, '\t');
+      getline(file, location, '\t');
+      getline(file, email, '\t');
+      getline(file, level, '\t');
+      file >> points;
+
+      Traveler traveler(id, name, email, level, points);
+      travelers[travelerCount++] = traveler;
+    }
+
+    file.close();
+    cout << "Loaded " << travelerCount << " travelers." << endl;
+}
+
+inline void loadReviews(Traveler travelers[], int travelerCount, Hotel hotels[], int& hotelCount) {
+    ifstream file("reviews.txt");
+    if (!file) {
+        cout << "Warning: reviews.txt not found." << endl;
+        return;
+    }
+
+    hotelCount = 0;
+    int reviewIDCounter = 1;
+
+    char u;
+    int userID;
+    double rating;
+    string reviewText, hotelName;
+    char ch;
+
+    while (file >> u >> userID >> rating) {
+      file.get(ch);
+
+      getline(file, reviewText, '\t');
+      getline(file, hotelName);
+      
+      Review rev(userID, (int)rating, reviewText, hotelName);
+
+      for (int i = 0; i < travelerCount; i++) {
+              if (travelers[i].getPersonID() == userID) {
+                  travelers[i].addReview(rev);
+                  break;
+              }
+          }
+
+          int hotelIndex = -1;
+          for (int i = 0; i < hotelCount; i++) {
+              if (hotels[i].getHotelName() == hotelName) {
+                  hotelIndex = i;
+                  break;
+              }
+          }
+
+          if (hotelIndex == -1) {
+              if (hotelCount < MAX_HOTELS) {
+                  hotels[hotelCount] = Hotel(hotelCount + 1, hotelName, "");
+                  hotelIndex = hotelCount++;
+              }
+          }
+
+          if (hotelIndex != -1) {
+              hotels[hotelIndex].addReview(rev);
+          }
+      }
+      
+      file.close();
+      cout << "Loaded reviews and created " << hotelCount << " hotels." << endl;
+  }
+    
+   
+#endif
