@@ -1,0 +1,64 @@
+%%writefile main.cpp
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <iomanip>
+
+#include "Constants.h"
+#include "Review.h"
+#include "Person.h"
+#include "Traveler.h"
+#include "Hotel.h"
+#include "FileIO.h"
+#include "Feature.h"
+
+int main() {
+  cout << "========== HOTEL REVIEW SYSTEM ==========" << endl;
+  cout << "Loading data..." << endl << endl;
+
+  //Entity-centric Lifestyle
+  Traveler travelers[MAX_TRAVELERS];
+  int travelerCount = 0;
+
+  Hotel hotels[MAX_HOTELS];
+  int hotelCount = 0;
+
+  // Read both files exactly once only
+  loadTravelers(travelers, travelerCount);
+  loadReviews(travelers, travelerCount, hotels, hotelCount); 
+
+  int choice = 0;
+  while (choice != 5)
+  {
+    printMenu();
+    cin >> choice;
+    switch (choice)
+    {
+      case 1:
+        propertyDeepDive(hotels, hotelCount);
+        break;
+      case 2:
+        travelerProfileManagement(travelers, travelerCount);
+        break;
+      case 3:
+        topPickMatcher(hotels, hotelCount);
+        break;
+      case 4:
+        topReviewers(travelers, travelerCount);
+        break;
+      case 5:
+        cout << "\nExiting system..." << endl;
+        break;
+      default:
+        cout << "Invalid choice!" << endl;
+    }
+  }
+
+  cout << "Saving data..." << endl;
+
+  cout << "Program terminated." << endl;
+
+  return 0;
+
+}
