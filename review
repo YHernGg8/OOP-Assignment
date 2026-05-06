@@ -1,0 +1,48 @@
+%%writefile Review.h
+#ifndef Review_H
+#define Review_H
+
+#include <iostream>
+#include <string>
+#include<iomanip>
+
+using namespace std;
+
+class Review {
+private:
+    int reviewID;
+    int userID;
+    string hotelName;
+    double rating;
+    string reviewText;
+
+public:
+    Review() : reviewID(0), userID(0), hotelName(""), rating(0.0), reviewText("") {}
+    
+    Review(int rid, int uid, string hotel, double r, string text)
+        : reviewID(rid), userID(uid), hotelName(hotel), rating(r), reviewText(text) {}
+
+
+    int getReviewID() const { return reviewID; }
+    int getUserID() const { return userID; }
+    string getHotelName() const { return hotelName; }
+    double getRating() const { return rating; }
+    string getReviewText() const { return reviewText; }
+
+    bool operator>(const Review& other) const {
+        return this->rating > other.rating;
+    }
+
+    bool operator<(const Review& other) const {
+        return this->rating < other.rating;
+    }
+
+    void print() const {
+        cout << "  Review ID: " << reviewID << " | User: " << userID 
+             << " | Rating: " << fixed << setprecision(1) << rating << "/5.0" << endl;
+        cout << "  Text: " << reviewText << endl;
+    }
+
+}; 
+
+#endif
