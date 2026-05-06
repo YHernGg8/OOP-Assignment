@@ -1,9 +1,7 @@
 #include <iostream>
 #include <fstream>
-#include <sstream>
 #include <string>
 #include <iomanip>
-#include <cmath>
 
 using namespace std;
 
@@ -13,37 +11,24 @@ const int MAX_TRAVELERS = 100;
 const int MAX_REVIEWS = 200;
 
 // ==================== REVIEW CLASS ====================
-/**
- * Review Class - Encapsulates a single review
- * This class is used in COMPOSITION by Traveler
- * Attributes: reviewID, userID, hotelName, rating, reviewText, date
- */
 class Review {
 private:
-    int reviewID;
-    int userID;
+    string userID;
     string hotelName;
-    double rating;
+    int rating;
     string reviewText;
-    string date;
 
 public:
-    // Constructor
-    Review() : reviewID(0), userID(0), hotelName(""), rating(0.0), reviewText(""), date("") {}
-    
-    Review(int rid, int uid, string hotel, double r, string text, string d)
-        : reviewID(rid), userID(uid), hotelName(hotel), rating(r), reviewText(text), date(d) {}
+    Review() : userID(""), hotelName(""), rating(0), reviewText("") {}
 
-    // Getters
-    int getReviewID() const { return reviewID; }
-    int getUserID() const { return userID; }
+    Review(string uid, int r, string text, string hotel)
+        : userID(uid), hotelName(hotel), rating(r), reviewText(text) {}
+
+    string getUserID() const { return userID; }
     string getHotelName() const { return hotelName; }
-    double getRating() const { return rating; }
+    int getRating() const { return rating; }
     string getReviewText() const { return reviewText; }
-    string getDate() const { return date; }
 
-    // OPERATOR OVERLOADING: Compare reviews by rating
-    // This operator will be used in Top-Pick Matcher
     bool operator>(const Review& other) const {
         return this->rating > other.rating;
     }
@@ -52,177 +37,124 @@ public:
         return this->rating < other.rating;
     }
 
-    // Display review
-    void display() const {
-        cout << "  Review ID: " << reviewID << " | User: " << userID 
-             << " | Rating: " << fixed << setprecision(1) << rating << "/5.0" << endl;
-        cout << "  Text: " << reviewText << " | Date: " << date << endl << endl;
+    void print() const {
+        cout << "  User: " << userID
+             << " | Hotel: " << hotelName
+             << " | Rating: " << rating << "/5" << endl;
+        cout << "  Text: " << reviewText << endl;
     }
 };
 
-// ==================== PERSON CLASS (Base Class) ====================
-/**
- * Person Class - Base class for travelers
- * INHERITANCE: This is the parent class
- * Provides: id, name, email
- * INHERITANCE PRINCIPLE: Encapsulates common attributes
- */
+// ==================== PERSON CLASS (Base) ====================
 class Person {
 protected:
-    int id;
+    string id;
     string name;
     string email;
 
 public:
-    // Constructor
-    Person() : id(0), name(""), email("") {}
-    
-    Person(int pid, string pname, string pemail)
-        : id(pid), name(pname), email(pemail) {}
+    Person() : id(""), name(""), email("") {}
+    Person(string pId, string pN, string pE) : id(pId), name(pN), email(pE) {}
 
-    // Getters
-    int getID() const { return id; }
-    string getName() const { return name; }
-    string getEmail() const { return email; }
+    string getPersonID() const { return id; }
+    string getPersonName() const { return name; }
+    string getPersonEmail() const { return email; }
 
-    // Setters
-    void setName(string n) { name = n; }
-    void setEmail(string e) { email = e; }
+    void setPersonName(string n) { name = n; }
+    void setPersonEmail(string e) { email = e; }
 
-    // Virtual-like method (will be overridden in child)
-    virtual void displayProfile() const {
+    virtual void printProfile() const {
         cout << "ID: " << id << " | Name: " << name << " | Email: " << email << endl;
     }
 
     virtual ~Person() {}
 };
 
-// ==================== TRAVELER CLASS (Derived Class) ====================
-/**
- * Traveler Class - Inherits from Person
- * INHERITANCE: Adds new attributes specific to travelers
- *   - membershipLevel (NEW)
- *   - loyaltyPoints (NEW)
- * COMPOSITION: "Owns" an array of Review objects (HAS-A relationship)
- * This is the PRIMARY ENTITY used in main()
- */
+// ==================== TRAVELER CLASS (Derived) ====================
 class Traveler : public Person {
 private:
-    string membershipLevel;  // Gold, Silver, Bronze (NEW data)
-    int loyaltyPoints;       // Loyalty points (NEW data)
-    Review authoredReviews[MAX_REVIEWS];  // COMPOSITION: Array of Review objects
+    string membershipLevel;
+    int loyaltyPoints;
+    Review writtenReview[MAX_REVIEWS];
     int reviewCount;
 
 public:
-    // Constructor
-    Traveler() : Person(), membershipLevel("Bronze"), loyaltyPoints(0), reviewCount(0) {}
-    
-    Traveler(int pid, string pname, string pemail, string mlevel, int lpoints)
-        : Person(pid, pname, pemail), membershipLevel(mlevel), loyaltyPoints(lpoints), reviewCount(0) {}
+    Traveler() : Person(), membershipLevel(""), loyaltyPoints(0), reviewCount(0) {}
 
-    // NEW GETTERS for child-specific attributes
+    Traveler(string pId, string pN, string pE, string ml, int lp)
+        : Person(pId, pN, pE), membershipLevel(ml), loyaltyPoints(lp), reviewCount(0) {}
+
     string getMembershipLevel() const { return membershipLevel; }
     int getLoyaltyPoints() const { return loyaltyPoints; }
     int getReviewCount() const { return reviewCount; }
 
-    // NEW SETTERS for child-specific attributes
-    void setMembershipLevel(string level) { membershipLevel = level; }
+    void setMembershipLevel(string ml) { membershipLevel = ml; }
     void setLoyaltyPoints(int points) { loyaltyPoints = points; }
 
-    // COMPOSITION METHOD: Add review to traveler
     bool addReview(const Review& review) {
-        if (reviewCount >= MAX_REVIEWS) {
-            return false;
-        }
-        authoredReviews[reviewCount++] = review;
-        
-        // Award loyalty points for writing review
-        int pointsAwarded = (int)review.getRating() * 10;  // 1 star = 10 points
+        if (reviewCount >= MAX_REVIEWS) return false;
+        writtenReview[reviewCount++] = review;
+        int pointsAwarded = review.getRating() * 10;
         loyaltyPoints += pointsAwarded;
-        updateMembershipLevel();  // Auto-update membership based on points
-        
+        updateMembershipLevel();
         return true;
     }
 
-    // Retrieve specific review by index
-    Review getReview(int index) const {
-        if (index >= 0 && index < reviewCount) {
-            return authoredReviews[index];
-        }
-        return Review();
-    }
+    Review* getAllReviews() { return writtenReview; }
 
-    // COMPOSITION METHOD: Get all reviews
-    Review* getAllReviews() {
-        return authoredReviews;
-    }
-
-    // Automatically upgrade/downgrade membership level based on loyalty points
     void updateMembershipLevel() {
-        if (loyaltyPoints >= 500) {
-            membershipLevel = "Platinum";
-        } else if (loyaltyPoints >= 300) {
-            membershipLevel = "Gold";
-        } else if (loyaltyPoints >= 100) {
-            membershipLevel = "Silver";
-        } else {
-            membershipLevel = "Bronze";
-        }
+        if (loyaltyPoints >= 10000) membershipLevel = "Platinum";
+        else if (loyaltyPoints >= 5000) membershipLevel = "Gold";
+        else if (loyaltyPoints >= 1000) membershipLevel = "Silver";
+        else membershipLevel = "Bronze";
     }
 
-    // OVERRIDDEN METHOD: Display with traveler-specific info
-    // This shows inheritance behavior - child extends parent display
-    void displayProfile() const override {
+    void printProfile() const override {
         cout << "========== TRAVELER PROFILE ==========" << endl;
-        Person::displayProfile();
+        Person::printProfile();
         cout << "Membership Level: " << membershipLevel << endl;
         cout << "Loyalty Points: " << loyaltyPoints << endl;
         cout << "Reviews Written: " << reviewCount << endl;
         cout << "=====================================" << endl;
     }
 
-    // Display all authored reviews (COMPOSITION in action)
-    void displayAuthoredReviews() const {
+    void displayWrittenReviews() const {
         if (reviewCount == 0) {
             cout << "This traveler has not written any reviews." << endl;
             return;
         }
         cout << "\nAuthor: " << name << " - Reviews (" << reviewCount << "):" << endl;
         for (int i = 0; i < reviewCount; i++) {
-            cout << "[" << (i+1) << "] ";
-            authoredReviews[i].display();
+            cout << "[" << (i + 1) << "] ";
+            writtenReview[i].print();
         }
     }
 
-    // OPERATOR OVERLOADING: Compare travelers by loyalty points
-    bool operator>(const Traveler& other) const {
-        return this->loyaltyPoints > other.loyaltyPoints;
+    bool operator>(const Traveler& right) const {
+        return this->loyaltyPoints > right.loyaltyPoints;
+    }
+
+    bool operator<(const Traveler& right) const {
+        return this->loyaltyPoints < right.loyaltyPoints;
     }
 };
 
 // ==================== HOTEL CLASS ====================
-/**
- * Hotel Class - Manages hotel data and reviews
- * This is a PRIMARY entity that can be queried
- * Attributes: hotelID, hotelName, location, reviews
- */
 class Hotel {
 private:
     int hotelID;
     string hotelName;
     string location;
-    Review hotelReviews[MAX_REVIEWS];
+    Review hotelReview[MAX_REVIEWS];
     int reviewCount;
-    double totalRating;  // For efficient average calculation
+    double totalRating;
 
 public:
-    // Constructor
     Hotel() : hotelID(0), hotelName(""), location(""), reviewCount(0), totalRating(0.0) {}
-    
-    Hotel(int hid, string hname, string hloc)
-        : hotelID(hid), hotelName(hname), location(hloc), reviewCount(0), totalRating(0.0) {}
 
-    // Getters
+    Hotel(int hid, string hName, string hloca)
+        : hotelID(hid), hotelName(hName), location(hloca), reviewCount(0), totalRating(0.0) {}
+
     int getHotelID() const { return hotelID; }
     string getHotelName() const { return hotelName; }
     string getLocation() const { return location; }
@@ -232,209 +164,207 @@ public:
         return totalRating / reviewCount;
     }
 
-    // Add review to hotel's collection
     bool addReview(const Review& review) {
-        if (reviewCount >= MAX_REVIEWS) {
-            return false;
-        }
-        hotelReviews[reviewCount++] = review;
+        if (reviewCount >= MAX_REVIEWS) return false;
+        hotelReview[reviewCount++] = review;
         totalRating += review.getRating();
         return true;
     }
 
-    // Get review by index
     Review getReview(int index) const {
-        if (index >= 0 && index < reviewCount) {
-            return hotelReviews[index];
-        }
+        if (index >= 0 && index < reviewCount) return hotelReview[index];
         return Review();
     }
 
-    // Get all reviews
-    Review* getAllReviews() {
-        return hotelReviews;
-    }
+    Review* getAllReviews() { return hotelReview; }
 
-    // Display hotel information and all reviews
-    void displayFullProfile() const {
+    void printHotelProfile() const {
         cout << "\n========== HOTEL: " << hotelName << " ==========" << endl;
         cout << "ID: " << hotelID << " | Location: " << location << endl;
         cout << "Total Reviews: " << reviewCount << endl;
         cout << "Average Rating: " << fixed << setprecision(2) << getAverageRating() << "/5.0" << endl;
         cout << "======================================\n" << endl;
-
         if (reviewCount == 0) {
             cout << "No reviews available for this hotel." << endl;
             return;
         }
-
         cout << "REVIEWS:" << endl;
         for (int i = 0; i < reviewCount; i++) {
-            cout << "[" << (i+1) << "] ";
-            hotelReviews[i].display();
+            cout << "[" << (i + 1) << "] ";
+            hotelReview[i].print();
         }
     }
 
-    // OPERATOR OVERLOADING: Compare hotels by average rating
-    // This is used in Top-Pick Matcher feature
-    bool operator>(const Hotel& other) const {
-        return this->getAverageRating() > other.getAverageRating();
+    bool operator>(const Hotel& right) const {
+        return this->getAverageRating() > right.getAverageRating();
     }
 
-    bool operator<(const Hotel& other) const {
-        return this->getAverageRating() < other.getAverageRating();
+    bool operator<(const Hotel& right) const {
+        return this->getAverageRating() < right.getAverageRating();
     }
 
-    // For output stream compatibility
-    friend ostream& operator<<(ostream& out, const Hotel& h);
+    // Friend function declarations
+    friend ostream& operator<<(ostream& os, const Hotel& hotel);
+    friend void hotelAnalyticsReport(const Hotel& hotel);
 };
 
-// ==================== FRIEND FUNCTION ====================
-/**
- * FRIEND FUNCTION: generateHotelRankingReport
- * Purpose: Access private hotel data to generate analytics
- * This function needs access to PRIVATE members:
- *   - hotelName (to display in report)
- *   - reviewCount (to show volume)
- *   - totalRating (to calculate average)
- * 
- * Why friend function (not member)?
- * - It's a utility/analytics function
- * - It accesses multiple private members
- * - It's external utility, not core hotel behavior
- * - Cleaner than making members public
- */
-ostream& operator<<(ostream& out, const Hotel& h) {
-    out << "Hotel: " << h.hotelName << " (ID: " << h.hotelID << ")"
-        << " | Avg Rating: " << fixed << setprecision(2) << h.getAverageRating()
-        << "/5.0 | Reviews: " << h.reviewCount;
-    return out;
+// Friend: operator<< for Hotel
+ostream& operator<<(ostream& os, const Hotel& hotel) {
+    os << hotel.hotelName << " (Avg Rating: "
+       << fixed << setprecision(2) << hotel.getAverageRating()
+       << " | Reviews: " << hotel.reviewCount << ")";
+    return os;
 }
 
-/**
- * FRIEND FUNCTION for generating detailed analytics
- * Accesses private: hotelName, reviewCount, totalRating
- * Could NOT be a member function (external utility)
- */
-void generateHotelAnalyticsReport(const Hotel& hotel) {
-    cout << "\n========== ANALYTICS REPORT ==========" << endl;
-    cout << "Hotel: " << hotel.hotelName << endl;
-    cout << "Total Reviews in System: " << hotel.reviewCount << endl;
-    
-    if (hotel.reviewCount == 0) {
-        cout << "Rating: No data available" << endl;
-    } else {
+// Friend function: Analytics report accessing private members
+void hotelAnalyticsReport(const Hotel& hotel) {
+    cout << "\n--- Analytics Report for " << hotel.hotelName << " ---" << endl;
+    cout << "Total Reviews: " << hotel.reviewCount << endl;
+    if (hotel.reviewCount > 0) {
         cout << "Cumulative Rating: " << fixed << setprecision(1) << hotel.totalRating << endl;
-        cout << "Average Rating: " << fixed << setprecision(2) << hotel.getAverageRating() << "/5.0" << endl;
-        cout << "Rating Stability: " << (hotel.reviewCount >= 10 ? "Reliable" : "Limited data") << endl;
+        cout << "Average Rating: " << fixed << setprecision(2) << hotel.totalRating / hotel.reviewCount << "/5.0" << endl;
+    } else {
+        cout << "No rating data available." << endl;
     }
-    cout << "=====================================\n" << endl;
+    cout << "-------------------------------------------" << endl;
 }
 
-// ==================== UTILITY FUNCTIONS FOR FILE I/O ====================
+// ==================== HELPERS (no sstream) ====================
+string trimStr(const string& s) {
+    int start = 0;
+    int end = s.length() - 1;
+    while (start <= end && s[start] == ' ') start++;
+    while (end >= start && s[end] == ' ') end--;
+    if (start > end) return "";
+    return s.substr(start, end - start + 1);
+}
 
-/**
- * CRITICAL CONSTRAINT: Read files EXACTLY ONCE at startup
- * Parse data WITHOUT processing logic
- * All processing happens in class methods
- */
+string readField(const string& line, int& pos) {
+    string field = "";
+    while (pos < (int)line.length() && line[pos] != '\t') {
+        field += line[pos];
+        pos++;
+    }
+    if (pos < (int)line.length()) pos++;
+    return field;
+}
 
-// Load travelers from Users.txt
-void loadTravelersFromFile(Traveler travelers[], int& travelerCount) {
-    ifstream file("Users.txt");
-    
-    if (!file.is_open()) {
-        cout << "Warning: Users.txt not found. Creating empty traveler array." << endl;
+int parseIntFromStr(const string& s) {
+    int result = 0;
+    for (int i = 0; i < (int)s.length(); i++) {
+        if (s[i] >= '0' && s[i] <= '9')
+            result = result * 10 + (s[i] - '0');
+    }
+    return result;
+}
+
+// ==================== FILE I/O ====================
+void loadTravelers(Traveler travelers[], int& travelerCount) {
+    ifstream file("users.txt");
+    if (!file) {
+        cout << "Warning: users.txt not found." << endl;
         travelerCount = 0;
         return;
     }
 
-    string line;
     travelerCount = 0;
-    
-    while (getline(file, line) && travelerCount < MAX_TRAVELERS) {
-        // Parse ONLY - no processing logic here
-        stringstream ss(line);
-        int id, points;
-        string name, email, level;
-        char delimiter;
+    string line;
 
-        if (ss >> id >> delimiter >> ws) {
-            getline(ss, name, '|');
-            getline(ss, email, '|');
-            getline(ss, level, '|');
-            ss >> points;
+    while (travelerCount < MAX_TRAVELERS && getline(file, line)) {
+        if (line.empty()) continue;
 
-            // Create traveler object
-            Traveler t(id, name, email, level, points);
-            travelers[travelerCount++] = t;
+        int tabCount = 0;
+        for (int i = 0; i < (int)line.length(); i++) {
+            if (line[i] == '\t') tabCount++;
         }
+
+        int pos = 0;
+        string userID = trimStr(readField(line, pos));
+        string name = "", email = "", level = "";
+        int points = 0;
+
+        if (tabCount >= 5) {
+            // 6 fields: ID, Name, Location, Email, Level, Points
+            string fName     = readField(line, pos);
+            string fLocation = readField(line, pos);
+            string fEmail    = readField(line, pos);
+            string fLevel    = readField(line, pos);
+            string fPoints   = readField(line, pos);
+            name   = trimStr(fName);
+            email  = trimStr(fEmail);
+            level  = trimStr(fLevel);
+            points = parseIntFromStr(fPoints);
+        } else if (tabCount >= 4) {
+            // 5 fields: ID, NameWithLocation, Email, Level, Points
+            string fName   = readField(line, pos);
+            string fEmail  = readField(line, pos);
+            string fLevel  = readField(line, pos);
+            string fPoints = readField(line, pos);
+            name   = trimStr(fName);
+            email  = trimStr(fEmail);
+            level  = trimStr(fLevel);
+            points = parseIntFromStr(fPoints);
+        }
+
+        Traveler traveler(userID, name, email, level, points);
+        travelers[travelerCount++] = traveler;
     }
 
     file.close();
     cout << "Loaded " << travelerCount << " travelers." << endl;
 }
 
-// Load reviews from Reviews.txt
-void loadReviewsIntoEntities(Traveler travelers[], int travelerCount, 
-                             Hotel hotels[], int& hotelCount) {
-    ifstream file("Reviews.txt");
-    
-    if (!file.is_open()) {
-        cout << "Warning: Reviews.txt not found." << endl;
+void loadReviews(Traveler travelers[], int travelerCount, Hotel hotels[], int& hotelCount) {
+    ifstream file("reviews.txt");
+    if (!file) {
+        cout << "Warning: reviews.txt not found." << endl;
         return;
     }
 
-    string line;
     hotelCount = 0;
-    
+    string line;
+
     while (getline(file, line)) {
-        // Parse ONLY - no processing logic here
-        stringstream ss(line);
-        int reviewID, userID;
-        string hotelName, ratingStr, reviewText, date;
-        double rating;
-        char delimiter;
+        if (line.empty()) continue;
 
-        if (ss >> reviewID >> delimiter >> ws) {
-            ss >> userID >> delimiter >> ws;
-            getline(ss, hotelName, '|');
-            getline(ss, ratingStr, '|');
-            rating = stod(ratingStr);
-            getline(ss, reviewText, '|');
-            getline(ss, date);
+        int pos = 0;
+        string userID = trimStr(readField(line, pos));
+        string ratingStr = readField(line, pos);
+        int rating = parseIntFromStr(ratingStr);
+        string reviewText = trimStr(readField(line, pos));
+        string hotelName = "";
+        while (pos < (int)line.length()) {
+            hotelName += line[pos];
+            pos++;
+        }
+        hotelName = trimStr(hotelName);
 
-            // Create review object
-            Review rev(reviewID, userID, hotelName, rating, reviewText, date);
+        Review rev(userID, rating, reviewText, hotelName);
 
-            // Add to corresponding traveler (COMPOSITION in action)
-            for (int i = 0; i < travelerCount; i++) {
-                if (travelers[i].getID() == userID) {
-                    travelers[i].addReview(rev);
-                    break;
-                }
+        for (int i = 0; i < travelerCount; i++) {
+            if (travelers[i].getPersonID() == userID) {
+                travelers[i].addReview(rev);
+                break;
             }
+        }
 
-            // Add to hotel or create new hotel if not exists
-            int hotelIndex = -1;
-            for (int i = 0; i < hotelCount; i++) {
-                if (hotels[i].getHotelName() == hotelName) {
-                    hotelIndex = i;
-                    break;
-                }
+        int hotelIndex = -1;
+        for (int i = 0; i < hotelCount; i++) {
+            if (hotels[i].getHotelName() == hotelName) {
+                hotelIndex = i;
+                break;
             }
+        }
 
-            if (hotelIndex == -1) {
-                // New hotel
-                if (hotelCount < MAX_HOTELS) {
-                    hotels[hotelCount] = Hotel(hotelCount + 1, hotelName, "Unknown");
-                    hotelIndex = hotelCount++;
-                }
+        if (hotelIndex == -1) {
+            if (hotelCount < MAX_HOTELS) {
+                hotels[hotelCount] = Hotel(hotelCount + 1, hotelName, "");
+                hotelIndex = hotelCount++;
             }
+        }
 
-            if (hotelIndex != -1) {
-                hotels[hotelIndex].addReview(rev);
-            }
+        if (hotelIndex != -1) {
+            hotels[hotelIndex].addReview(rev);
         }
     }
 
@@ -442,12 +372,7 @@ void loadReviewsIntoEntities(Traveler travelers[], int travelerCount,
     cout << "Loaded reviews and created " << hotelCount << " hotels." << endl;
 }
 
-// ==================== FEATURE FUNCTIONS ====================
-
-/**
- * FEATURE 1: Property Deep-Dive
- * Find and summarize all reviews for a specific hotel
- */
+// ==================== FEATURES ====================
 void propertyDeepDive(Hotel hotels[], int hotelCount) {
     cout << "\n========== PROPERTY DEEP-DIVE ==========" << endl;
     cout << "Enter hotel name: ";
@@ -457,49 +382,38 @@ void propertyDeepDive(Hotel hotels[], int hotelCount) {
 
     for (int i = 0; i < hotelCount; i++) {
         if (hotels[i].getHotelName() == searchName) {
-            hotels[i].displayFullProfile();
-            generateHotelAnalyticsReport(hotels[i]);
+            hotels[i].printHotelProfile();
+            hotelAnalyticsReport(hotels[i]);
             return;
         }
     }
-
     cout << "Hotel '" << searchName << "' not found in database." << endl;
 }
 
-/**
- * FEATURE 2: Traveler Profile Management
- */
 void travelerProfileManagement(Traveler travelers[], int travelerCount) {
     cout << "\n========== TRAVELER PROFILE ==========" << endl;
     cout << "Enter traveler ID: ";
-    int searchID;
+    string searchID;
     cin >> searchID;
 
     for (int i = 0; i < travelerCount; i++) {
-        if (travelers[i].getID() == searchID) {
-            travelers[i].displayProfile();
-            travelers[i].displayAuthoredReviews();
+        if (travelers[i].getPersonID() == searchID) {
+            travelers[i].printProfile();
+            travelers[i].displayWrittenReviews();
             return;
         }
     }
-
     cout << "Traveler with ID " << searchID << " not found." << endl;
 }
 
-/**
- * FEATURE 3: Top-Pick Matcher
- * Uses OPERATOR OVERLOADING (>) to rank hotels
- * This demonstrates practical use of operator overloading
- */
 void topPickMatcher(Hotel hotels[], int hotelCount) {
     cout << "\n========== TOP-PICK MATCHER ==========" << endl;
     cout << "Hotel Rankings (by average rating):" << endl;
 
-    // Simple bubble sort using operator overloading
     Hotel temp;
     for (int i = 0; i < hotelCount - 1; i++) {
         for (int j = 0; j < hotelCount - i - 1; j++) {
-            if (hotels[j] < hotels[j + 1]) {  // Using operator<
+            if (hotels[j] < hotels[j + 1]) {
                 temp = hotels[j];
                 hotels[j] = hotels[j + 1];
                 hotels[j + 1] = temp;
@@ -513,19 +427,13 @@ void topPickMatcher(Hotel hotels[], int hotelCount) {
     }
 }
 
-/**
- * FEATURE 4: Top Reviewers
- * Creative implementation: Find travelers with most reviews
- * Uses OPERATOR OVERLOADING (>) for comparison
- */
 void topReviewers(Traveler travelers[], int travelerCount) {
     cout << "\n========== TOP REVIEWERS (by Loyalty Points) ==========" << endl;
 
-    // Simple bubble sort using operator overloading
     Traveler temp;
     for (int i = 0; i < travelerCount - 1; i++) {
         for (int j = 0; j < travelerCount - i - 1; j++) {
-            if (travelers[j] < travelers[j + 1]) {  // Using Traveler's operator<
+            if (travelers[j] < travelers[j + 1]) {
                 temp = travelers[j];
                 travelers[j] = travelers[j + 1];
                 travelers[j + 1] = temp;
@@ -535,87 +443,42 @@ void topReviewers(Traveler travelers[], int travelerCount) {
 
     cout << "\nTop Reviewers:" << endl;
     for (int i = 0; i < travelerCount && i < 10; i++) {
-        cout << "[" << (i + 1) << "] " << travelers[i].getName()
+        cout << "[" << (i + 1) << "] " << travelers[i].getPersonName()
              << " | Loyalty Points: " << travelers[i].getLoyaltyPoints()
              << " | Level: " << travelers[i].getMembershipLevel()
              << " | Reviews: " << travelers[i].getReviewCount() << endl;
     }
 }
 
-// ==================== MENU SYSTEM ====================
-void displayMenu() {
+void printMenu() {
     cout << "\n========== HOTEL REVIEW SYSTEM ==========" << endl;
-    cout << "1. Property Deep-Dive (search hotel reviews)" << endl;
-    cout << "2. Traveler Profile (manage traveler info)" << endl;
-    cout << "3. Top-Pick Matcher (rank hotels)" << endl;
-    cout << "4. Top Reviewers (loyalty leaders)" << endl;
+    cout << "1. Property Deep-Dive" << endl;
+    cout << "2. Traveler Profile" << endl;
+    cout << "3. Top-Pick Matcher" << endl;
+    cout << "4. Top Reviewers" << endl;
     cout << "5. Exit" << endl;
     cout << "========================================" << endl;
     cout << "Enter your choice (1-5): ";
 }
 
-// ==================== SAVE DATA TO OUTPUT FILE ====================
-void saveDataToFile(Traveler travelers[], int travelerCount,
-                    Hotel hotels[], int hotelCount) {
-    ofstream file("output.txt");
-
-    if (!file.is_open()) {
-        cout << "Error: Could not create output file." << endl;
-        return;
-    }
-
-    // Write traveler summary
-    file << "========== TRAVELER SUMMARY ==========" << endl;
-    file << "Total Travelers: " << travelerCount << endl << endl;
-    for (int i = 0; i < travelerCount; i++) {
-        file << "ID: " << travelers[i].getID() << " | "
-             << "Name: " << travelers[i].getName() << " | "
-             << "Level: " << travelers[i].getMembershipLevel() << " | "
-             << "Points: " << travelers[i].getLoyaltyPoints() << endl;
-    }
-
-    // Write hotel summary
-    file << "\n========== HOTEL SUMMARY ==========" << endl;
-    file << "Total Hotels: " << hotelCount << endl << endl;
-    for (int i = 0; i < hotelCount; i++) {
-        file << "Hotel: " << hotels[i].getHotelName() << " | "
-             << "Reviews: " << hotels[i].getReviewCount() << " | "
-             << "Avg Rating: " << fixed << setprecision(2) 
-             << hotels[i].getAverageRating() << "/5.0" << endl;
-    }
-
-    file.close();
-    cout << "\nData saved to output.txt" << endl;
-}
-
-// ==================== MAIN FUNCTION ====================
-/**
- * CRITICAL ARCHITECTURE REQUIREMENT:
- * - PRIMARY ENTITY: Traveler array (not a manager class)
- * - ONE-TIME I/O: Load at start, save at end
- * - ALL LOGIC: In class methods, not in main
- */
+// ==================== MAIN ====================
 int main() {
     cout << "========== HOTEL REVIEW SYSTEM ==========" << endl;
     cout << "Loading data..." << endl << endl;
 
-    // PRIMARY ENTITY: Traveler array (Entity-centric design)
     Traveler travelers[MAX_TRAVELERS];
     int travelerCount = 0;
 
     Hotel hotels[MAX_HOTELS];
     int hotelCount = 0;
 
-    // CRITICAL: ONE-TIME I/O - Read files exactly once at startup
-    loadTravelersFromFile(travelers, travelerCount);
-    loadReviewsIntoEntities(travelers, travelerCount, hotels, hotelCount);
+    loadTravelers(travelers, travelerCount);
+    loadReviews(travelers, travelerCount, hotels, hotelCount);
 
-    // Main loop
     int choice = 0;
     while (choice != 5) {
-        displayMenu();
+        printMenu();
         cin >> choice;
-
         switch (choice) {
             case 1:
                 propertyDeepDive(hotels, hotelCount);
@@ -633,64 +496,12 @@ int main() {
                 cout << "\nExiting system..." << endl;
                 break;
             default:
-                cout << "Invalid choice. Please try again." << endl;
+                cout << "Invalid choice!" << endl;
         }
     }
 
-    // CRITICAL: ONE-TIME I/O - Write to file exactly once at exit
     cout << "Saving data..." << endl;
-    saveDataToFile(travelers, travelerCount, hotels, hotelCount);
-
     cout << "Program terminated." << endl;
+
     return 0;
 }
-
-/*
-========== ARCHITECTURE SUMMARY ==========
-
-OOP PILLARS DEMONSTRATED:
-
-1. INHERITANCE ✓
-   - Person (base class with id, name, email)
-   - Traveler (derived class with membershipLevel, loyaltyPoints)
-   - Child overrides displayProfile()
-   - Child adds new data members (NOT just structure)
-
-2. COMPOSITION ✓
-   - Traveler "owns" array of Review objects
-   - Review array is member variable (not inherited)
-   - Traveler.addReview() demonstrates composition usage
-   - Object lifecycle: Reviews destroyed when Traveler destroyed
-
-3. OPERATOR OVERLOADING ✓
-   - Review::operator>() compares by rating
-   - Hotel::operator<() compares by average rating
-   - Traveler::operator>() compares by loyalty points
-   - Used in actual sorting algorithms (top-pick matcher)
-
-4. FRIEND FUNCTIONS ✓
-   - generateHotelAnalyticsReport() accesses private members
-   - operator<< accesses private hotelName, reviewCount, totalRating
-   - Cannot be member functions (external utility)
-   - Justifiable encapsulation breach
-
-CONSTRAINTS SATISFIED:
-
-✓ Entity-centric main(): Traveler array is primary entity
-✓ One-Time I/O: Load once at startup, save once at exit
-✓ Logic in classes: All processing in member functions
-✓ No circular dependencies: Clean hierarchy
-✓ No STL: Fixed-size arrays only
-✓ No virtual functions: Regular method override
-✓ No polymorphism: No abstract classes
-✓ Processing outside file loops: Parse only in loops
-
-FEATURES IMPLEMENTED:
-
-1. Property Deep-Dive: Search hotel, display all reviews
-2. Traveler Profile: View traveler info and authored reviews
-3. Top-Pick Matcher: Rank hotels using operator overloading
-4. Top Reviewers: Rank travelers by loyalty points
-
-============================================
-*/
